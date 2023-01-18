@@ -3,9 +3,14 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { PetsModule } from './pets/pets.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { UserModule } from './user/user.module';
+import { ConfigModule } from '@nestjs/config';
 
 @Module({
   imports: [PetsModule,
+    ConfigModule.forRoot({
+      isGlobal: true
+    }),
     TypeOrmModule.forRoot(
       {
         type: 'mysql',
@@ -15,10 +20,10 @@ import { TypeOrmModule } from '@nestjs/typeorm';
         password: '',
         database: 'helpetdb',
         autoLoadEntities: true,
-        synchronize: true,
-        logging: true,
+        synchronize: true
       }
-    )
+    ),
+    UserModule
   ],
   controllers: [AppController],
   providers: [AppService],
