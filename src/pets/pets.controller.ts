@@ -49,12 +49,12 @@ export class PetsController {
     return await this.petsService.getMyPets(user);
   }
   
-  @Get('filter')
+/*   @Get('filter')
   async filterPets(
     @Query() mesQueryParams : filterPetDto
   ) : Promise<PetEntity[]> {
     return await this.petsService.filterPets(mesQueryParams);
-  }
+  } */
 
   @Put('update/:id')
   @UseGuards(JwtAuthGuard)
@@ -79,7 +79,23 @@ export class PetsController {
     return await this.petsService.countPosts();
   }
 
+  @Get('Paginatedfilter')
+  async PaginatedfilteredPets(
+    @Query('data') filteredData : filterPetDto,
+    @Query('page', new DefaultValuePipe (1), ParseIntPipe) page:number
+  ) {
+  
+    return await this.petsService.paginatedfilteredPets(filteredData, page);
+  }
+
   @Get('petListPages')
+  async getPetsPages(
+    @Query('page', new DefaultValuePipe (1), ParseIntPipe) page:number ,
+  ) {
+    return await this.petsService.getAllPetsPaginated(page);
+  }
+
+  /* @Get('petListPages')
   async getPetsPages(
     @Query('page', new DefaultValuePipe (1), ParseIntPipe) page:number ,
     @Query('limit', new DefaultValuePipe (4), ParseIntPipe) limit:number,
@@ -89,5 +105,5 @@ export class PetsController {
       limit
     }
     return await this.petsService.getAllPetsPaginated(options);
-  }
+  } */
 }

@@ -40,14 +40,6 @@ export class PetsService {
     });
   }
 
-  async filterPets (mesQueryParams : filterPetDto) : Promise<PetEntity[]>{
-     return await this.petRepo.createQueryBuilder("petinfo")
-      .where(mesQueryParams.type ? "petinfo.type = :type" : "1=1", {type: mesQueryParams.type})
-      .andWhere(mesQueryParams.sex ?"petinfo.sex = :sex" : "1=1", {sex: mesQueryParams.sex})
-      .andWhere(mesQueryParams.age ? "petinfo.age = :age" : "1=1", {age: mesQueryParams.age})
-      .getMany();
-  }
-
   async updatePet (id : number , todo : UpdatePetDto, user){
     const newPet = await this.petRepo.preload({
         id,
@@ -84,10 +76,69 @@ export class PetsService {
     return await this.petRepo.count();
   }
 
-  async getAllPetsPaginated(options: IPaginationOptions): Promise<Pagination <PetEntity>> {
+ /*  async countFilteredPosts (mesQueryParams : filterPetDto) {
+    return await this.petRepo.createQueryBuilder("petinfo")
+      .where(mesQueryParams.type ? "petinfo.type = :type" : "1=1", {type: mesQueryParams.type})
+      .andWhere(mesQueryParams.sex ?"petinfo.sex = :sex" : "1=1", {sex: mesQueryParams.sex})
+      .andWhere(mesQueryParams.age ? "petinfo.age = :age" : "1=1", {age: mesQueryParams.age})
+      .getCount();
+  } */
+  
+  async paginatedfilteredPets (filteredData : filterPetDto, page: number) {
+    console.log("page :" + page)
+    console.log(filteredData)
+    const where = {};
+
+    if (filteredData.type) {
+        where['type'] = filteredData.type;
+    }
+    if (filteredData.sex) {
+        where['sex'] = filteredData.sex;
+    }
+    if (filteredData.age) {
+        where['age'] = filteredData.age;
+    }
+    console.log(where)
+    const filteredPostsCount = await this.petRepo.count({ where });
+    console.log(filteredPostsCount)
+    const postsPerPage = 3;
+    const numberOfPages = Math.ceil(filteredPostsCount/postsPerPage);
+    
+    const filteredPosts = await this.petRepo.find({
+      where,
+      skip : postsPerPage * (page - 1),
+      take : postsPerPage,
+    });
+
+    return { 
+      items: filteredPosts,
+      total: numberOfPages 
+    }
+
+  }
+
+
+  async getAllPetsPaginated(page: number) {
     const queryBuilder = this.petRepo.createQueryBuilder('petinfo');
     queryBuilder.orderBy('petinfo.id', 'ASC');
-    return paginate<PetEntity>(this.petRepo, options);
+    const postsPerPage = 3;
+    const [items, total] = await queryBuilder.skip((page-1)* postsPerPage)
+                                             .take(postsPerPage)
+                                             .getManyAndCount();
+    const numberOfPages = Math.ceil(total/postsPerPage);
+                                             
+    return { 
+      items,
+      total: numberOfPages
+    };
+
   }
+
+/*   async getAllPetsPaginated(options: IPaginationOptions): Promise<Pagination <PetEntity>> {
+    const queryBuilder = this.petRepo.createQueryBuilder('petinfo');
+    queryBuilder.orderBy('petinfo.id', 'ASC');
+    console.log("called");
+    return paginate<PetEntity>(this.petRepo, options);
+  } */
 
 }
