@@ -62,6 +62,9 @@ export class UserService {
   }
 
   isOwnerOrAdmin(objet, user) {
+    console.log("objet.user", objet.user)
+    console.log("objet.user.id", objet.user.id)
+    console.log("user.id =", user.id)
     return user.role === UserRoleEnum.ADMIN || (objet.user && objet.user.id === user.id);
   }
 

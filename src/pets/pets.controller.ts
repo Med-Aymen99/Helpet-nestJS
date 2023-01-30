@@ -35,6 +35,32 @@ export class PetsController {
     return await this.petsService.createPet(newPet, user);
   }
 
+
+  @Put('update/:id')
+  @UseInterceptors(FileInterceptor('imageFile', {
+    storage: diskStorage({
+      destination: './uploads',
+      filename: editFileName
+    })
+  }))
+  @UseGuards(JwtAuthGuard)
+  async updatePet(
+    @Param('id', ParseIntPipe) id : number,
+    @Body() newPet: UpdatePetDto,
+    @User() user,
+    @UploadedFile() imageFile : Express.Multer.File,
+  ) {
+    console.log("authorized !!")
+    console.log("imageFile", imageFile)
+    if (imageFile){
+      console.log("ok")
+      newPet.imageRef=imageFile.filename;
+    } else {
+      newPet.imageRef=""
+    }
+    return await this.petsService.updatePet(id, newPet, user);
+  }
+
   @Get('petList')
   async getAllPets(
   ) : Promise<PetEntity[]> {
@@ -46,7 +72,8 @@ export class PetsController {
   async getMyPets(
     @User() user
   ) : Promise<PetEntity[]> {
-    return await this.petsService.getMyPets(user);
+    console.log(user)
+    return await this.petsService.findPetsByUser(user.id);
   }
   
 /*   @Get('filter')
@@ -56,15 +83,6 @@ export class PetsController {
     return await this.petsService.filterPets(mesQueryParams);
   } */
 
-  @Put('update/:id')
-  @UseGuards(JwtAuthGuard)
-  async updatePet(
-    @Param('id', ParseIntPipe) id : number,
-    @Body() newPet: UpdatePetDto,
-    @User() user
-  ) {
-    return await this.petsService.updatePet(id, newPet, user);
-  }
 
   @Delete('delete/:id')
   @UseGuards(JwtAuthGuard)

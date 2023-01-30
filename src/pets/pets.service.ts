@@ -7,11 +7,7 @@ import { CreatePetDto } from './dto/create-pet.dto';
 import { filterPetDto } from './dto/filter-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 import { PetEntity } from './entities/pet.entity';
-import {
-  paginate,
-  Pagination,
-  IPaginationOptions,
-} from 'nestjs-typeorm-paginate';
+
 
 @Injectable()
 export class PetsService {
@@ -32,24 +28,27 @@ export class PetsService {
     return await this.petRepo.find();
   }
 
-  async getMyPets(user) {
-    return await this.petRepo.find({
-      where: {
-        user: user
-      }
-    });
+  async findPetsByUser(userId) {
+    return this.petRepo.createQueryBuilder('petinfo')
+               .leftJoinAndSelect("petinfo.user", "user")
+               .where("user.id = :userId", { userId })
+               .getMany();
   }
 
-  async updatePet (id : number , todo : UpdatePetDto, user){
+  async updatePet (id : number , pet : UpdatePetDto, user){
+    console.log("pet", pet)
     const newPet = await this.petRepo.preload({
         id,
-        ...todo
+        ...pet
     })
+    console.log("newPet", newPet)
     if (!newPet)
         throw new NotFoundException(`Le pet d'id ${id} n'existe pas`)
-    if (!this.userService.isOwnerOrAdmin(newPet, user))
-        throw new UnauthorizedException();
-    
+    if (!this.userService.isOwnerOrAdmin(newPet, user)) {
+      console.log(" you are not the owner")
+      throw new UnauthorizedException();
+    }
+        
         return await this.petRepo.save(newPet);
   }
 
