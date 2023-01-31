@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, HttpStatus } from '@nestjs/common';
 import { UnauthorizedException } from '@nestjs/common/exceptions/unauthorized.exception';
 import { InjectRepository } from '@nestjs/typeorm';
 import { UserService } from 'src/user/user.service';
@@ -7,6 +7,10 @@ import { CreatePetDto } from './dto/create-pet.dto';
 import { filterPetDto } from './dto/filter-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
 import { PetEntity } from './entities/pet.entity';
+import * as fs from 'fs';
+import { promisify } from 'util';
+import { join } from 'path';
+import { readFileSync } from 'fs';
 
 
 @Injectable()
@@ -29,28 +33,29 @@ export class PetsService {
   }
 
   async findPetsByUser(userId) {
-    return this.petRepo.createQueryBuilder('petinfo')
+    const userPets = await this.petRepo.createQueryBuilder('petinfo')
                .leftJoinAndSelect("petinfo.user", "user")
                .where("user.id = :userId", { userId })
                .getMany();
+    return this.getPetsWithImgs(userPets)
   }
 
-  async updatePet (id : number , pet : UpdatePetDto, user){
-    console.log("pet", pet)
-    const newPet = await this.petRepo.preload({
-        id,
-        ...pet
-    })
-    console.log("newPet", newPet)
-    if (!newPet)
-        throw new NotFoundException(`Le pet d'id ${id} n'existe pas`)
-    if (!this.userService.isOwnerOrAdmin(newPet, user)) {
+  async updatePet (id : number , petUpdate : UpdatePetDto, user){
+    const oldPet = await this.findPetById(id)
+    console.log("oldPet", oldPet)
+    if (!oldPet)
+    throw new NotFoundException(`Le pet d'id ${id} n'existe pas`)
+    if (!this.userService.isOwnerOrAdmin(oldPet, user)) {
       console.log(" you are not the owner")
       throw new UnauthorizedException();
     }
-        
-        return await this.petRepo.save(newPet);
+    const newPet = await this.petRepo.preload({
+      id,
+      ...petUpdate
+    })
+    return await this.petRepo.save(newPet);
   }
+
 
   async deletePet(id: number, user) {
     const petToDelete = await this.findPetById(id);
@@ -124,20 +129,36 @@ export class PetsService {
     const [items, total] = await queryBuilder.skip((page-1)* postsPerPage)
                                              .take(postsPerPage)
                                              .getManyAndCount();
-    const numberOfPages = Math.ceil(total/postsPerPage);
-                                             
+    const numberOfPages = Math.ceil(total/postsPerPage);  
+    const petsWithImgs = await this.getPetsWithImgs(items)
     return { 
-      items,
+      items : petsWithImgs,
       total: numberOfPages
     };
 
   }
+  async getPetsWithImgs(items: PetEntity[]) {
+    return await Promise.all(items.map(async (pet) =>{
+      const petImageFile = await this.getImage(pet.imageRef)
+      delete pet.imageRef;
+      return {
+        ...pet,
+        petImageFile
+      }
+    }))
+  }
 
-/*   async getAllPetsPaginated(options: IPaginationOptions): Promise<Pagination <PetEntity>> {
-    const queryBuilder = this.petRepo.createQueryBuilder('petinfo');
-    queryBuilder.orderBy('petinfo.id', 'ASC');
-    console.log("called");
-    return paginate<PetEntity>(this.petRepo, options);
-  } */
+  async getImage(imagename: string){
+    try {
+      const file = join(process.cwd(), './uploads/' + imagename);
+      const data = readFileSync(file);
+      const base64 = data.toString('base64');
+      return base64;
+    } catch (error) {
+      return null;
+    }
+  }
 
 }
+
+

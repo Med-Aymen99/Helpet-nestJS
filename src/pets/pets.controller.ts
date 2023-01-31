@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, Put, ParseIntPipe, Query, UseGuards, Req, UseInterceptors, DefaultValuePipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Put, ParseIntPipe, Query, UseGuards, Req, UseInterceptors, DefaultValuePipe, HttpStatus } from '@nestjs/common';
 import { PetsService } from './pets.service';
 import { CreatePetDto } from './dto/create-pet.dto';
 import { UpdatePetDto } from './dto/update-pet.dto';
@@ -7,9 +7,13 @@ import { filterPetDto } from './dto/filter-pet.dto';
 import { JwtAuthGuard } from 'src/user/guards/jwt-auth.guard';
 import { User } from 'src/decorators/user.decorator';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UploadedFile } from '@nestjs/common/decorators';
+import { Res, UploadedFile } from '@nestjs/common/decorators';
 import { diskStorage } from 'multer';
 import { editFileName } from 'src/common/editFileName';
+import { Response, response } from 'express';
+import { Observable, of } from 'rxjs';
+import { join } from 'path';
+import { readFileSync } from 'fs';
 
 @Controller('pets')
 export class PetsController {
@@ -75,14 +79,6 @@ export class PetsController {
     console.log(user)
     return await this.petsService.findPetsByUser(user.id);
   }
-  
-/*   @Get('filter')
-  async filterPets(
-    @Query() mesQueryParams : filterPetDto
-  ) : Promise<PetEntity[]> {
-    return await this.petsService.filterPets(mesQueryParams);
-  } */
-
 
   @Delete('delete/:id')
   @UseGuards(JwtAuthGuard)
@@ -110,18 +106,17 @@ export class PetsController {
   async getPetsPages(
     @Query('page', new DefaultValuePipe (1), ParseIntPipe) page:number ,
   ) {
-    return await this.petsService.getAllPetsPaginated(page);
+    const obj = await this.petsService.getAllPetsPaginated(page);
+    //console.log("obj :", obj)
+    return obj;
   }
 
-  /* @Get('petListPages')
-  async getPetsPages(
-    @Query('page', new DefaultValuePipe (1), ParseIntPipe) page:number ,
-    @Query('limit', new DefaultValuePipe (4), ParseIntPipe) limit:number,
-  ) {
-    const options = {
-      page,
-      limit
-    }
-    return await this.petsService.getAllPetsPaginated(options);
+
+  /* @Get('petImg/:imagename')
+  findProfileImage(@Param('imagename') imagename, @Res() res): Observable<object> {
+      const img = of(res.sendFile(join(process.cwd(), './uploads/' + imagename)));
+      console.log(img)
+      return img
   } */
+
 }
