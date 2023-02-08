@@ -113,9 +113,11 @@ export class PetsService {
       skip : postsPerPage * (page - 1),
       take : postsPerPage,
     });
+    console.log(filteredPosts)
+    const filteredpostsWithImgs = await this.getPetsWithImgs(filteredPosts)
 
     return { 
-      items: filteredPosts,
+      items: filteredpostsWithImgs,
       total: numberOfPages 
     }
 
