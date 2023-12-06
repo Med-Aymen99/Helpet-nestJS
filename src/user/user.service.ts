@@ -52,6 +52,7 @@ export class UserService {
         email: user.email,
         role: user.role
       };
+      // generate the jwt token using the user info in the payload
       const jwt = this.jwtService.sign(payload);
       return {
         "acces_token" : jwt,

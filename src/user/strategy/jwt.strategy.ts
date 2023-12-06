@@ -14,14 +14,20 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     @InjectRepository(UserEntity)
     private userRepo: Repository<UserEntity>
   ) {
+    /* Passport first verifies the JWT's signature 
+    and decodes the JSON. It then invokes our validate() method 
+    passing the decoded JSON */
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: configService.get('SECRET'),
     });
+
   }
 
-  //Définier la façon avec laquelle on valide le token
+ /*  Passport will build a user object based on the return value of our validate() method, 
+  and attach it as a property on the Request object */
+  
   async validate(payload: PayloadInterface) {
     const user = await this.userRepo.findOne({
         where: {username: payload.username}
